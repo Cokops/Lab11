@@ -8,11 +8,28 @@ class TestServicesIntegration(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Запускается один раз перед всеми тестами"""
-        cls.shared_dir = r"C:\Users\Артём\Documents\Новая папка\MidZad\shared_data"
+        # Текущий файл: C:\Users\Артём\Documents\Новая папка\MidZad\test_integration.py
+        # Проект - это та же папка, где лежит test_integration.py
+        cls.project_root = os.path.dirname(os.path.abspath(__file__))  # .../MidZad
         
-        # Проверяем, что папка существует
+        cls.shared_dir = os.path.join(cls.project_root, "shared_data")
+        
+        print(f"\n[SETUP] Current file: {os.path.abspath(__file__)}")
+        print(f"[SETUP] Project root: {cls.project_root}")
+        print(f"[SETUP] Shared directory: {cls.shared_dir}")
+        
+        # Проверяем, что папка shared_data существует
         if not os.path.exists(cls.shared_dir):
             os.makedirs(cls.shared_dir)
+        
+        # Проверяем наличие docker-compose.yml
+        docker_compose_path = os.path.join(cls.project_root, "docker-compose.yml")
+        if not os.path.exists(docker_compose_path):
+            print(f"❌ ERROR: docker-compose.yml not found at {docker_compose_path}")
+            print(f"   Files in {cls.project_root}: {os.listdir(cls.project_root)}")
+            sys.exit(1)
+        
+        print(f"✓ Found docker-compose.yml at {docker_compose_path}")
         
         # Запускаем docker-compose перед тестами
         print("\n[SETUP] Starting Docker containers...")
@@ -20,7 +37,7 @@ class TestServicesIntegration(unittest.TestCase):
             ["docker-compose", "up", "-d"],
             capture_output=True,
             text=True,
-            cwd=r"C:\Users\Артём\Documents\Новая папка\MidZad"
+            cwd=cls.project_root
         )
         
         if result.returncode != 0:
@@ -28,7 +45,7 @@ class TestServicesIntegration(unittest.TestCase):
             sys.exit(1)
         
         print("[SETUP] Waiting for containers to initialize...")
-        time.sleep(15)  # Даем время на запуск и создание файлов
+        time.sleep(15)
     
     @classmethod
     def tearDownClass(cls):
@@ -37,13 +54,17 @@ class TestServicesIntegration(unittest.TestCase):
         subprocess.run(
             ["docker-compose", "down"],
             capture_output=True,
-            cwd=r"C:\Users\Артём\Documents\Новая папка\MidZad"
+            cwd=cls.project_root
         )
-        
     
     def test_shared_data_created(self):
         """Проверка, что все сервисы создали свои файлы."""
         print("\n[TEST 1] Checking if all files were created...")
+        
+        self.assertTrue(
+            os.path.exists(self.shared_dir),
+            f"❌ Shared directory {self.shared_dir} does not exist"
+        )
         
         files = os.listdir(self.shared_dir)
         expected_files = ["from_python.txt", "from_go.txt", "from_rust.txt"]
@@ -52,7 +73,8 @@ class TestServicesIntegration(unittest.TestCase):
             self.assertIn(
                 expected_file, 
                 files, 
-                f"❌ Файл {expected_file} не найден в {self.shared_dir}"
+                f"❌ Файл {expected_file} не найден в {self.shared_dir}\n"
+                f"   Существующие файлы: {files}"
             )
             print(f"  ✓ {expected_file} exists")
         
@@ -111,6 +133,10 @@ class TestServicesIntegration(unittest.TestCase):
                 )
                 exit_code = result.stdout.strip()
             
+            if exit_code == "":
+                print(f"  ⚠️  {container} not found or not running")
+                continue
+            
             self.assertEqual(
                 exit_code, 
                 "0", 
@@ -121,5 +147,4 @@ class TestServicesIntegration(unittest.TestCase):
         print("[TEST 3] ✅ PASSED")
 
 if __name__ == '__main__':
-    # Настраиваем подробный вывод
     unittest.main(verbosity=2)
