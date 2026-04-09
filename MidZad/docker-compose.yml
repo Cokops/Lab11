@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  python-service:
+    image: python:3.9-slim
+    container_name: python_service
+    volumes:
+      - ./shared_data:/shared_data
+    working_dir: /app
+    command: >
+      sh -c "
+      echo 'Hello from Python' > /shared_data/from_python.txt &&
+      while [ ! -f /shared_data/from_go.txt ] || [ ! -f /shared_data/from_rust.txt ]; do
+        sleep 2;
+      done &&
+      echo 'Python received files from Go and Rust'
+      "
+    stdin_open: true
+    tty: true
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  go-service:
+    image: golang:1.17-alpine
+    container_name: go_service
+    volumes:
+      - ./shared_data:/shared_data
+    working_dir: /app
+    command: >
+      sh -c "
+      echo 'Hello from Go' > /shared_data/from_go.txt &&
+      while [ ! -f /shared_data/from_python.txt ] || [ ! -f /shared_data/from_rust.txt ]; do
+        sleep 2;
+      done &&
+      echo 'Go received files from Python and Rust'
+      "
+    stdin_open: true
+    tty: true
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  rust-service:
+    image: rust:1.56-slim
+    container_name: rust_service
+    volumes:
+      - ./shared_data:/shared_data
+    working_dir: /app
+    command: >
+      sh -c "
+      echo 'Hello from Rust' > /shared_data/from_rust.txt &&
+      while [ ! -f /shared_data/from_python.txt ] || [ ! -f /shared_data/from_go.txt ]; do
+        sleep 2;
+      done &&
+      echo 'Rust received files from Python and Go'
+      "
+    stdin_open: true
+    tty: true
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+volumes:
+  shared_data:
+    driver: local
