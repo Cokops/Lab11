@@ -1,0 +1,19 @@
+[build-system]
+requires = ["maturin>=1.5,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "my-python-app"
+version = "0.1.0"
+description = "App with Rust extension"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi", # Пример runtime зависимости
+    "uvicorn"
+]
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+bindings = "pyo3"
+manifest-path = "Cargo.toml"
+python-source = "src"

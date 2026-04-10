@@ -1,0 +1,19 @@
+[package]
+name = "my_rust_core"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "my_rust_core"
+crate-type = ["cdylib", "rlib", "staticlib"]  # Добавлен staticlib для .a файла
+
+[dependencies]
+pyo3 = { version = "0.20.3", features = ["extension-module"] }
+ndarray = "0.15"
+
+[profile.release]
+strip = true
+lto = true
+opt-level = "z"
+codegen-units = 1     # Улучшает LTO оптимизации
+panic = "abort"
