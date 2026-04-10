@@ -1,0 +1,31 @@
+# Git
+.git
+.gitignore
+
+# Python (локальный кэш и виртуальные окружения)
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+*.so
+
+# Rust (target - самый тяжелый)
+target/
+**/*.rs.bk
+Cargo.lock
+
+# Docker / IDE
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+.vscode/
+.idea/
+
+# Тесты и документация
+tests/
+docs/
+README.md

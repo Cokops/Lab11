@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # Оптимизация: если сеть тупит, добавляем зеркало
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+    image: python-rust-app:latest
+    container_name: optimized_python_rust
+    ports:
+      - "8080:8080"
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    # Для отладки (монтирование кода в режиме разработки отключает финальный COPY)
+    # volumes:
+    #   - ./src:/app
+    # command: python -m debugpy --listen 0.0.0.0:5678 main.py
