@@ -9,19 +9,17 @@ services:
     working_dir: /app
     command: >
       sh -c "
+      mkdir -p /shared_data &&
       echo 'Hello from Python' > /shared_data/from_python.txt &&
       while [ ! -f /shared_data/from_go.txt ] || [ ! -f /shared_data/from_rust.txt ]; do
         sleep 2;
       done &&
-      echo 'Python received files from Go and Rust'
+      echo 'Python received files from Go and Rust' &&
+      tail -f /dev/null
       "
-    stdin_open: true
-    tty: true
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
+    cpus: "0.5"
+    mem_limit: 512m
+    restart: "no"  # Меняем на no, чтобы после выхода не перезапускался бесконечно
 
   go-service:
     image: golang:1.17-alpine
@@ -31,19 +29,17 @@ services:
     working_dir: /app
     command: >
       sh -c "
+      mkdir -p /shared_data &&
       echo 'Hello from Go' > /shared_data/from_go.txt &&
       while [ ! -f /shared_data/from_python.txt ] || [ ! -f /shared_data/from_rust.txt ]; do
         sleep 2;
       done &&
-      echo 'Go received files from Python and Rust'
+      echo 'Go received files from Python and Rust' &&
+      tail -f /dev/null
       "
-    stdin_open: true
-    tty: true
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
+    cpus: "0.5"
+    mem_limit: 512m
+    restart: "no"
 
   rust-service:
     image: rust:1.56-slim
@@ -53,19 +49,17 @@ services:
     working_dir: /app
     command: >
       sh -c "
+      mkdir -p /shared_data &&
       echo 'Hello from Rust' > /shared_data/from_rust.txt &&
       while [ ! -f /shared_data/from_python.txt ] || [ ! -f /shared_data/from_go.txt ]; do
         sleep 2;
       done &&
-      echo 'Rust received files from Python and Go'
+      echo 'Rust received files from Python and Go' &&
+      tail -f /dev/null
       "
-    stdin_open: true
-    tty: true
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
+    cpus: "0.5"
+    mem_limit: 512m
+    restart: "no"
 
 volumes:
   shared_data:

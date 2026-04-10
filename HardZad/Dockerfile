@@ -1,5 +1,5 @@
-# ==================== STAGE 1: RUST BUILDER ====================
-FROM rust:1.76-slim-bookworm AS rust-builder
+# ==================== STAGE 1:   BUILDER ====================
+FROM rust:1.80-slim-bookworm AS rust-builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config \
@@ -23,17 +23,11 @@ RUN cargo build --release || (cat target/release/build/my_rust_core-*/output 2>/
 # ==================== STAGE 2: PYTHON WHEEL BUILDER ====================
 FROM python:3.12-slim AS wheel-builder
 
-# Устанавливаем системные зависимости, maturin И RUST
+# Устанавливаем системные зависимости и maturin
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
-    curl \
-    build-essential \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir maturin==1.5.1
-
-# Устанавливаем Rust (нужен для maturin build)
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /app
 
@@ -51,44 +45,37 @@ COPY --from=rust-builder /build/rust_extension/Cargo.toml ./
 # Копируем исходники Rust
 COPY src/lib.rs ./src/
 
-# Проверяем наличие cargo
-RUN cargo --version && rustc --version
-
-# Сборка wheel В dist/
-RUN echo "=== Запуск maturin build ===" && \
-    maturin build --release --out dist --interpreter python3.12 -v 2>&1 | tee build.log || \
-    (echo "=== ОШИБКА СБОРКИ ===" && \
-     tail -50 build.log && \
-     exit 1)
-
-# Проверяем dist
-RUN echo "=== Проверка dist ===" && \
-    ls -la dist/ && \
-    echo "=== Wheel файлы ===" && \
-    ls -la dist/*.whl
+# Собираем wheel-файл
+RUN maturin build --release --out dist --interpreter python3.12
 
 # ==================== STAGE 3: FINAL RUNTIME ====================
 FROM python:3.12-slim AS runtime
 
+# Устанавливаем минимальные системные зависимости
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libc6 \
     && rm -rf /var/lib/apt/lists/*
 
+
 WORKDIR /app
 
+# Создаем непривилегированного пользователя
 RUN addgroup --system --gid 1001 appgroup && \
     adduser --system --uid 1001 --gid 1001 appuser
 
-# ✅ Копируем wheel ИЗ dist/ (а не из target/wheels)
-COPY --from=wheel-builder /app/dist/*.whl /tmp/
+# Копируем wheel из второго этапа
+COPY --from=wheel-builder /app/dist/*.whl ./dist/
 
+# Копируем файл с зависимостями и устанавливаем всё сразу
 COPY requirements.txt .
-RUN pip install --no-cache-dir /tmp/*.whl && \
+RUN pip install --no-cache-dir dist/*.whl && \
     pip install --no-cache-dir -r requirements.txt && \
-    rm -rf /tmp/*.whl requirements.txt
+    rm -rf dist requirements.txt
 
+# Копируем основной код приложения (самый изменяемый слой - ПОСЛЕДНИМ)
 COPY src/main.py .
 
+# Переключаемся на непривилегированного пользователя
 USER appuser
 
 EXPOSE 8080
