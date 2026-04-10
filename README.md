@@ -54,7 +54,6 @@
 
 - **`MidZad/`** — Мультиязычные сервисы
   - `docker-compose.yml` — Оркестрация Python, Go и Rust сервисов
-  - `shared_data/` — Общая директория для обмена файлами
 
 - **`HardZad/`** — Оптимизированная сборка с Rust-расширением
   - `Dockerfile` — Многоэтапная сборка (multi-stage)
@@ -64,7 +63,6 @@
   - `Cargo.toml` — Манифест зависимостей Rust
   - `src/lib.rs` — Код Rust-расширения
   - `src/main.py` — Точка входа Python-приложения
-  - `requirements.txt` — Список runtime-зависимостей Python
   - `test_functional.py` — Функциональные тесты приложения
 
 - **Корневые файлы**
